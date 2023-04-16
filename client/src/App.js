@@ -3,21 +3,64 @@ import { useState, useEffect } from "react";
 
 import axios from "axios";
 
-const CLIENT_ID = "Iv1.9da7059168d6351d";
+const CLIENT_ID = "841897ca3c8f3c68e798";
 
 function App() {
+  const [reRender, setReRender] = useState(false);
   useEffect(() => {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
     const codeParam = urlParams.get("code");
 
     console.log(codeParam);
-  });
+
+    if (codeParam && localStorage.getItem("accessToken") === null) {
+      async function getAccessToken() {
+        await fetch(`http://127.0.0.1:4000/getAccessToken?code=${codeParam}`, {
+          method: "GET",
+        })
+          .then((response) => {
+            console.log(response.body);
+            return response.json();
+          })
+          .then((data) => {
+            console.log("This is data", data);
+
+            if (data.access_token) {
+              localStorage.setItem("accessToken", data.access_token);
+              setReRender(!reRender);
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      }
+
+      getAccessToken();
+    }
+  }, []);
+
+  const getUserData = async () => {
+    await fetch("http://localhost:4000/getUserData", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("accessToken"), //Bearer AccessToken
+      },
+    })
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        console.log(data);
+      });
+  };
+
   const loginWithGit = () => {
     window.location.assign(
       `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}`
     );
   };
+
   const [gitRepo, setRepo] = useState("");
 
   const [gitRepoName, setGitRepoName] = useState("");
@@ -28,7 +71,7 @@ function App() {
     console.log(gitRepoName);
 
     axios
-      .get("https://api.github.com/users/iCodeWalker/repos ")
+      .get("https://api.github.com/users/iCodeWalker/repos")
       .then(function (response) {
         console.log(response);
       })
